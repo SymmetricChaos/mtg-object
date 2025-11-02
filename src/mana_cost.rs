@@ -1,4 +1,9 @@
 use crate::mana_symbol::ManaSymbol;
+use regex::Regex;
+use std::cell::LazyCell;
+
+pub const MANA_COST_PARSER: LazyCell<Regex> =
+    LazyCell::new(|| Regex::new(r"(\{[WUBRGXYCS\/2]+\})|\{[0123456789]+\}").unwrap());
 
 /// A mana cost representated as a sequence of ManaSymbol. A well formed ManaCost does not repeat any ManaSymbol as they include their multiplicity or value already.
 pub struct ManaCost {
@@ -8,6 +13,12 @@ pub struct ManaCost {
 impl ManaCost {
     pub fn parse_string(s: &str) -> Option<Self> {
         let mut symbols = Vec::new();
+
+        let mut caps = MANA_COST_PARSER.captures(s).unwrap();
+
+        for (n, capture) in caps.iter().enumerate() {
+            println!("{n} {}", capture.unwrap().as_str());
+        }
 
         Some(ManaCost { symbols })
     }
@@ -98,4 +109,9 @@ impl ManaCost {
         }
         mv
     }
+}
+
+#[test]
+fn test_parse() {
+    ManaCost::parse_string("{U/W}{R}{G}{R}{2/B}{15}{C}");
 }
