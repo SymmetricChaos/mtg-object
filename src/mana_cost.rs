@@ -9,12 +9,12 @@ pub const MANA_COST_PARSER: LazyCell<Regex> =
 /// A mana cost representated as a sequence of ManaSymbol. A well formed ManaCost does not repeat any ManaSymbol as they include their multiplicity or value already.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManaCost {
-    symbols: BTreeMap<Mana, usize>,
+    symbols: BTreeMap<Mana, i32>,
 }
 
 impl ManaCost {
     // Convenience method.
-    fn add(&mut self, mana: Mana, n: usize) {
+    fn add(&mut self, mana: Mana, n: i32) {
         self.symbols
             .entry(mana)
             .and_modify(|curr| *curr += n)
@@ -29,7 +29,7 @@ impl ManaCost {
 
         for (_, [m]) in MANA_COST_PARSER.captures_iter(s).map(|c| c.extract()) {
             if NUMBER.is_match(m) {
-                cost.add(Mana::Generic, usize::from_str_radix(m, 10).unwrap());
+                cost.add(Mana::Generic, i32::from_str_radix(m, 10).unwrap());
             } else {
                 match m {
                     "W" => cost.add(Mana::White, 1),
@@ -76,14 +76,16 @@ impl ManaCost {
             if *s == Mana::Generic {
                 out.push_str(&format!("{{{}}}", n));
             } else {
-                out.push_str(&s.to_string().repeat(*n));
+                out.push_str(&s.to_string().repeat(
+                    usize::try_from(*n).expect("negative mana multiplicity for mana symbol"),
+                ));
             }
         }
         out
     }
 
     /// The mana value associated with a ManaCost.
-    pub fn mana_value(&self) -> usize {
+    pub fn mana_value(&self) -> i32 {
         let mut mv = 0;
         for (s, n) in self.symbols.iter() {
             mv += s.value() * n;
@@ -92,7 +94,7 @@ impl ManaCost {
     }
 
     /// The mana value associated with a ManaCost on the stack when values for X and Y have been chosen.
-    pub fn mana_value_on_stack(&self, x: usize, y: usize) -> usize {
+    pub fn mana_value_on_stack(&self, x: i32, y: i32) -> i32 {
         let mut mv = 0;
         for (s, n) in self.symbols.iter() {
             if *s == Mana::X {

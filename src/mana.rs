@@ -81,7 +81,7 @@ impl Display for Mana {
 }
 
 impl Mana {
-    pub fn value(&self) -> usize {
+    pub fn value(&self) -> i32 {
         match self {
             Mana::W2 | Mana::U2 | Mana::B2 | Mana::R2 | Mana::G2 => 2,
             Mana::X | Mana::Y => 0,
