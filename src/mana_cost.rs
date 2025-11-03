@@ -1,32 +1,82 @@
-use crate::mana_symbol::ManaSymbol;
+use crate::mana::Mana;
 use regex::Regex;
-use std::cell::LazyCell;
+use std::{cell::LazyCell, collections::BTreeMap};
 
+pub const NUMBER: LazyCell<Regex> = LazyCell::new(|| Regex::new(r"[0123456789]+").unwrap());
 pub const MANA_COST_PARSER: LazyCell<Regex> =
-    LazyCell::new(|| Regex::new(r"(\{[WUBRGXYCS\/2]+\})|\{[0123456789]+\}").unwrap());
+    LazyCell::new(|| Regex::new(r"\{([WUBRGXYCS\/0123456789]+)\}").unwrap());
 
 /// A mana cost representated as a sequence of ManaSymbol. A well formed ManaCost does not repeat any ManaSymbol as they include their multiplicity or value already.
+#[derive(Debug, Clone)]
 pub struct ManaCost {
-    symbols: Vec<ManaSymbol>,
+    cost: BTreeMap<Mana, usize>,
 }
 
 impl ManaCost {
-    pub fn parse_string(s: &str) -> Option<Self> {
-        let mut symbols = Vec::new();
-
-        let mut caps = MANA_COST_PARSER.captures(s).unwrap();
-
-        for (n, capture) in caps.iter().enumerate() {
-            println!("{n} {}", capture.unwrap().as_str());
-        }
-
-        Some(ManaCost { symbols })
+    fn add(&mut self, mana: Mana, n: usize) {
+        self.cost
+            .entry(mana)
+            .and_modify(|curr| *curr += n)
+            .or_insert(n);
     }
 
+    /// Create a ManaCost from a &str.
+    pub fn parse_string(s: &str) -> Option<Self> {
+        let mut cost = ManaCost {
+            cost: BTreeMap::new(),
+        };
+
+        for (_, [m]) in MANA_COST_PARSER.captures_iter(s).map(|c| c.extract()) {
+            if NUMBER.is_match(m) {
+                cost.add(Mana::Generic, usize::from_str_radix(m, 10).unwrap());
+            } else {
+                match m {
+                    "W" => cost.add(Mana::White, 1),
+                    "U" => cost.add(Mana::Blue, 1),
+                    "B" => cost.add(Mana::Black, 1),
+                    "R" => cost.add(Mana::Red, 1),
+                    "G" => cost.add(Mana::Green, 1),
+                    "C" => cost.add(Mana::Colorless, 1),
+                    "S" => cost.add(Mana::Snow, 1),
+                    "X" => cost.add(Mana::X, 1),
+                    "Y" => cost.add(Mana::Y, 1),
+                    "W/2" => cost.add(Mana::W2, 1),
+                    "U/2" => cost.add(Mana::U2, 1),
+                    "B/2" => cost.add(Mana::B2, 1),
+                    "R/2" => cost.add(Mana::R2, 1),
+                    "G/2" => cost.add(Mana::G2, 1),
+                    "W/U" => cost.add(Mana::WU, 1),
+                    "W/B" => cost.add(Mana::WB, 1),
+                    "U/B" => cost.add(Mana::UB, 1),
+                    "U/R" => cost.add(Mana::UR, 1),
+                    "B/R" => cost.add(Mana::BR, 1),
+                    "B/G" => cost.add(Mana::BG, 1),
+                    "R/G" => cost.add(Mana::RG, 1),
+                    "R/W" => cost.add(Mana::RW, 1),
+                    "G/W" => cost.add(Mana::GW, 1),
+                    "G/U" => cost.add(Mana::GU, 1),
+                    "W/C" => cost.add(Mana::WC, 1),
+                    "U/C" => cost.add(Mana::UC, 1),
+                    "B/C" => cost.add(Mana::BC, 1),
+                    "R/C" => cost.add(Mana::RC, 1),
+                    "G/C" => cost.add(Mana::GC, 1),
+                    _ => return None,
+                };
+            }
+        }
+
+        Some(cost)
+    }
+
+    /// Print the symbols of a ManaCost in text form.
     pub fn print_symbols(&self) -> String {
         let mut out = String::new();
-        for s in self.symbols.iter() {
-            out.push_str(&s.to_string());
+        for (s, n) in self.cost.iter() {
+            if *s == Mana::Generic {
+                out.push_str(&format!("{{{}}}", n));
+            } else {
+                out.push_str(&s.to_string().repeat(*n));
+            }
         }
         out
     }
@@ -34,38 +84,8 @@ impl ManaCost {
     /// The mana value associated with a ManaCost.
     pub fn mana_value(&self) -> usize {
         let mut mv = 0;
-        for symbol in self.symbols.iter() {
-            match symbol {
-                ManaSymbol::X(_) | ManaSymbol::Y(_) => (),
-                ManaSymbol::Generic(n)
-                | ManaSymbol::White(n)
-                | ManaSymbol::Blue(n)
-                | ManaSymbol::Black(n)
-                | ManaSymbol::Red(n)
-                | ManaSymbol::Green(n)
-                | ManaSymbol::Colorless(n)
-                | ManaSymbol::Snow(n)
-                | ManaSymbol::WB(n)
-                | ManaSymbol::UB(n)
-                | ManaSymbol::UR(n)
-                | ManaSymbol::BR(n)
-                | ManaSymbol::BG(n)
-                | ManaSymbol::RG(n)
-                | ManaSymbol::RW(n)
-                | ManaSymbol::GW(n)
-                | ManaSymbol::GU(n)
-                | ManaSymbol::WU(n)
-                | ManaSymbol::WC(n)
-                | ManaSymbol::UC(n)
-                | ManaSymbol::BC(n)
-                | ManaSymbol::RC(n)
-                | ManaSymbol::GC(n) => mv += n,
-                ManaSymbol::W2(n)
-                | ManaSymbol::U2(n)
-                | ManaSymbol::B2(n)
-                | ManaSymbol::R2(n)
-                | ManaSymbol::G2(n) => mv += n * 2,
-            }
+        for (s, n) in self.cost.iter() {
+            mv += s.value() * n;
         }
         mv
     }
@@ -73,38 +93,13 @@ impl ManaCost {
     /// The mana value associated with a ManaCost on the stack when values for X and Y have been chosen.
     pub fn mana_value_on_stack(&self, x: usize, y: usize) -> usize {
         let mut mv = 0;
-        for symbol in self.symbols.iter() {
-            match symbol {
-                ManaSymbol::X(n) => mv += n * x,
-                ManaSymbol::Y(n) => mv += n * y,
-                ManaSymbol::Generic(n)
-                | ManaSymbol::White(n)
-                | ManaSymbol::Blue(n)
-                | ManaSymbol::Black(n)
-                | ManaSymbol::Red(n)
-                | ManaSymbol::Green(n)
-                | ManaSymbol::Colorless(n)
-                | ManaSymbol::Snow(n)
-                | ManaSymbol::WB(n)
-                | ManaSymbol::UB(n)
-                | ManaSymbol::UR(n)
-                | ManaSymbol::BR(n)
-                | ManaSymbol::BG(n)
-                | ManaSymbol::RG(n)
-                | ManaSymbol::RW(n)
-                | ManaSymbol::GW(n)
-                | ManaSymbol::GU(n)
-                | ManaSymbol::WU(n)
-                | ManaSymbol::WC(n)
-                | ManaSymbol::UC(n)
-                | ManaSymbol::BC(n)
-                | ManaSymbol::RC(n)
-                | ManaSymbol::GC(n) => mv += n,
-                ManaSymbol::W2(n)
-                | ManaSymbol::U2(n)
-                | ManaSymbol::B2(n)
-                | ManaSymbol::R2(n)
-                | ManaSymbol::G2(n) => mv += n * 2,
+        for (s, n) in self.cost.iter() {
+            if *s == Mana::X {
+                mv += x * n;
+            } else if *s == Mana::Y {
+                mv += y * n;
+            } else {
+                mv += s.value() * n;
             }
         }
         mv
@@ -113,5 +108,6 @@ impl ManaCost {
 
 #[test]
 fn test_parse() {
-    ManaCost::parse_string("{U/W}{R}{G}{R}{2/B}{15}{C}");
+    let c = ManaCost::parse_string("{R}{G}{R}{15}{C}{W/U}").unwrap();
+    println!("{}", c.print_symbols());
 }
