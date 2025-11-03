@@ -7,14 +7,15 @@ pub const MANA_COST_PARSER: LazyCell<Regex> =
     LazyCell::new(|| Regex::new(r"\{([WUBRGXYCS\/0123456789]+)\}").unwrap());
 
 /// A mana cost representated as a sequence of ManaSymbol. A well formed ManaCost does not repeat any ManaSymbol as they include their multiplicity or value already.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManaCost {
-    cost: BTreeMap<Mana, usize>,
+    symbols: BTreeMap<Mana, usize>,
 }
 
 impl ManaCost {
+    // Convenience method.
     fn add(&mut self, mana: Mana, n: usize) {
-        self.cost
+        self.symbols
             .entry(mana)
             .and_modify(|curr| *curr += n)
             .or_insert(n);
@@ -23,7 +24,7 @@ impl ManaCost {
     /// Create a ManaCost from a &str.
     pub fn parse_string(s: &str) -> Option<Self> {
         let mut cost = ManaCost {
-            cost: BTreeMap::new(),
+            symbols: BTreeMap::new(),
         };
 
         for (_, [m]) in MANA_COST_PARSER.captures_iter(s).map(|c| c.extract()) {
@@ -68,10 +69,10 @@ impl ManaCost {
         Some(cost)
     }
 
-    /// Print the symbols of a ManaCost in text form.
+    /// Print the symbols of a ManaCost in text form. Currently does not conform to canonical ordering.
     pub fn print_symbols(&self) -> String {
         let mut out = String::new();
-        for (s, n) in self.cost.iter() {
+        for (s, n) in self.symbols.iter() {
             if *s == Mana::Generic {
                 out.push_str(&format!("{{{}}}", n));
             } else {
@@ -84,7 +85,7 @@ impl ManaCost {
     /// The mana value associated with a ManaCost.
     pub fn mana_value(&self) -> usize {
         let mut mv = 0;
-        for (s, n) in self.cost.iter() {
+        for (s, n) in self.symbols.iter() {
             mv += s.value() * n;
         }
         mv
@@ -93,7 +94,7 @@ impl ManaCost {
     /// The mana value associated with a ManaCost on the stack when values for X and Y have been chosen.
     pub fn mana_value_on_stack(&self, x: usize, y: usize) -> usize {
         let mut mv = 0;
-        for (s, n) in self.cost.iter() {
+        for (s, n) in self.symbols.iter() {
             if *s == Mana::X {
                 mv += x * n;
             } else if *s == Mana::Y {

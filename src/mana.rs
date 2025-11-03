@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-/// All possible mana symbols along with their multiplicity (or value for Generic).
+/// All possible mana symbols.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Mana {
     Generic,
