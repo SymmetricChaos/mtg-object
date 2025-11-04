@@ -45,7 +45,7 @@ impl Display for Mana {
             f,
             "{}",
             match self {
-                Mana::Generic => "{#}", // has to be handled seperately
+                Mana::Generic => "{#}", // numeric value must be handled sepeately
                 Mana::White => "{W}",
                 Mana::Blue => "{U}",
                 Mana::Black => "{B}",

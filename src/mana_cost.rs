@@ -14,6 +14,7 @@ pub struct ManaCost {
 
 impl ManaCost {
     // Convenience method.
+    // Negative values should not be used.
     fn add(&mut self, mana: Mana, n: i32) {
         self.symbols
             .entry(mana)
@@ -41,11 +42,13 @@ impl ManaCost {
                     "S" => cost.add(Mana::Snow, 1),
                     "X" => cost.add(Mana::X, 1),
                     "Y" => cost.add(Mana::Y, 1),
+                    // Twobrid
                     "W/2" => cost.add(Mana::W2, 1),
                     "U/2" => cost.add(Mana::U2, 1),
                     "B/2" => cost.add(Mana::B2, 1),
                     "R/2" => cost.add(Mana::R2, 1),
                     "G/2" => cost.add(Mana::G2, 1),
+                    // Hybrid
                     "W/U" => cost.add(Mana::WU, 1),
                     "W/B" => cost.add(Mana::WB, 1),
                     "U/B" => cost.add(Mana::UB, 1),
@@ -56,6 +59,7 @@ impl ManaCost {
                     "R/W" => cost.add(Mana::RW, 1),
                     "G/W" => cost.add(Mana::GW, 1),
                     "G/U" => cost.add(Mana::GU, 1),
+                    // Onebrid
                     "W/C" => cost.add(Mana::WC, 1),
                     "U/C" => cost.add(Mana::UC, 1),
                     "B/C" => cost.add(Mana::BC, 1),
@@ -69,7 +73,7 @@ impl ManaCost {
         Some(cost)
     }
 
-    /// Print the symbols of a ManaCost in text form. Currently does not conform to canonical ordering.
+    /// Print the symbols of a ManaCost in text form using an arbitrary order.
     pub fn print_symbols(&self) -> String {
         let mut out = String::new();
         for (s, n) in self.symbols.iter() {

@@ -8,7 +8,7 @@ pub struct MtgObject {
     pub color: ColorSet,
     pub color_identity: ColorSet,
     pub power: Option<Number>,
-    pub toughness: Option<Number>,
+    pub pt: Option<(Number, Number)>,
     pub loyalty: Option<Number>,
     pub defense: Option<Number>,
     pub type_line: Vec<String>,
