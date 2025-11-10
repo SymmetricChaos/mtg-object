@@ -2,7 +2,9 @@ use mtg_color::ColorSet;
 
 use crate::{mana_cost::ManaCost, number::Number};
 
-pub struct MtgObject {
+pub struct CardObject {
+    pub owner: i32,               // must be valid to a player
+    pub controller: i32,          // must be valid to a player
     pub name: Vec<String>,        // a card can have zero or more names
     pub mana_cost: Vec<ManaCost>, // a card may have zero or more mana costs
     pub color: ColorSet,
@@ -14,7 +16,7 @@ pub struct MtgObject {
     pub type_line: Vec<String>,
 }
 
-impl MtgObject {
+impl CardObject {
     /// Print all the names of the object. For objects with multiple names each is separated by ` // `.
     pub fn print_name(&self) -> String {
         if self.name.is_empty() {
