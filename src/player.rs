@@ -1,7 +1,7 @@
 use crate::card_object::CardObject;
 
 pub struct Player {
-    pub id: i32, // must be unique per game
+    pub id: usize, // must be unique per game
     pub life: i32,
     pub storm_count: i32,
     // floating mana

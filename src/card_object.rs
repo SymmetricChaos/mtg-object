@@ -1,19 +1,22 @@
+use std::collections::BTreeMap;
+
 use mtg_color::ColorSet;
 
-use crate::{mana_cost::ManaCost, number::Number};
+use crate::{counters::Counter, mana_cost::ManaCost, number::Number};
 
 pub struct CardObject {
-    pub owner: i32,               // must be valid to a player
-    pub controller: i32,          // must be valid to a player
+    pub owner: usize,             // must be valid to a player
+    pub controller: usize,        // must be valid to a player
     pub name: Vec<String>,        // a card can have zero or more names
     pub mana_cost: Vec<ManaCost>, // a card may have zero or more mana costs
     pub color: ColorSet,
     pub color_identity: ColorSet,
-    pub power: Option<Number>,
     pub pt: Option<(Number, Number)>,
     pub loyalty: Option<Number>,
     pub defense: Option<Number>,
     pub type_line: Vec<String>,
+    pub counters: BTreeMap<Counter, i32>,
+    pub damage: i32,
 }
 
 impl CardObject {
